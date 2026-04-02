@@ -20,7 +20,7 @@ Faces lets distributed teams see each other — literally. Every employee signs 
 | Auth | Auth.js v5 — Google OAuth provider |
 | Database | Neon (serverless Postgres) |
 | ORM | Prisma |
-| File Storage | Cloudinary |
+| File Storage | Cloudflare R2 |
 | Hosting | Netlify |
 | CI/CD | GitHub → Netlify (automatic) |
 
@@ -69,7 +69,7 @@ faces/
 ├── lib/
 │   ├── auth.ts                       # Auth.js config + Google provider
 │   ├── prisma.ts                     # Prisma client singleton
-│   ├── cloudinary.ts                 # Upload helpers
+│   ├── r2.ts                         # Cloudflare R2 upload helpers
 │   └── org.ts                        # Domain → org matching logic
 │
 ├── prisma/
@@ -107,7 +107,7 @@ model Member {
 
 model Photo {
   id          String       @id @default(cuid())
-  url         String                          // Cloudinary URL
+  url         String                          // Public R2 object URL
   memberName  String                          // Display name on card
   team        String                          // e.g. "Design", "Engineering"
   memberId    String
@@ -202,7 +202,7 @@ Each card displays:
 2. Snap              → canvas.toBlob() → shown in PhotoPreview
 3. Retake or confirm
 4. PhotoForm         → Name (pre-filled from Google account), Team (searchable dropdown)
-5. Submit            → Upload to Cloudinary → POST /api/photos → redirect to wall
+5. Submit            → Upload to Cloudflare R2 → POST /api/photos → redirect to wall
                        → New card appears on the wall
 ```
 
@@ -215,7 +215,7 @@ Camera permission errors are handled gracefully with a shadcn `Alert` component.
 | Challenge | Solution |
 |---|---|
 | Rendering 2,000 cards | Viewport culling — only ~50–80 cards rendered at once |
-| Image loading | Cloudinary CDN + lazy loading via IntersectionObserver |
+| Image loading | R2 public bucket/custom domain + lazy loading via IntersectionObserver |
 | DB query speed | Spatial index on `(x, y, orgId)` columns |
 | First load | Server-render initial viewport chunk |
 | New photos appearing | Optimistic UI insert on the posting user's client |
@@ -304,10 +304,12 @@ GOOGLE_CLIENT_SECRET=
 # Neon Postgres
 DATABASE_URL=postgresql://...
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+# Cloudflare R2
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
 ```
 
 ---
@@ -325,7 +327,7 @@ CLOUDINARY_API_SECRET=
 - `CameraCapture` component (MediaDevices API)
 - Photo preview + retake
 - `PhotoForm` with team dropdown
-- Cloudinary upload
+- Cloudflare R2 upload
 - `POST /api/photos` — save to DB with canvas position
 
 ### Phase 3 — Wall MVP

@@ -12,38 +12,31 @@ This repo is partially implemented.
   - Next.js 15 app scaffold with App Router
   - Prisma ORM 7 on PostgreSQL
   - local Postgres development setup
+  - Auth.js v5 beta with Google sign-in
+  - organisation auto-join/create flow by email domain
   - capture UI with webcam, preview, retake, and member details form
-  - Cloudinary upload helper
+  - Cloudflare R2 upload helper
   - `POST /api/photos` and `GET /api/photos`
+  - org-gated wall and capture routes
   - stable photo placement coordinates in the database
 
 - Still placeholder:
-  - Auth.js / Google OAuth
-  - organisation creation and auto-join flow
-  - domain-gated session checks
   - wall rendering beyond a placeholder page
   - settings/admin surface
-  - shadcn/ui project setup and official component usage
-
-- Important frontend note:
-  - the current UI is mostly custom Tailwind markup
-  - it is not yet implemented with official shadcn/ui components from `ui.shadcn.com`
-  - the docs below describe the intended frontend standard, not the current frontend implementation
+  - full infinite canvas implementation
 
 ## What To Do Next
 
-Based on [BuildMe.md](/Users/bartbak/Repo/moment/BuildMe.md), the next sensible step is to finish the missing parts of Phase 1 before moving deeper into the wall work.
+Based on [BuildMe.md](/Users/bartbak/Repo/moment/BuildMe.md), the next sensible step is Phase 3 wall MVP work now that auth, onboarding, and uploads are in place.
 
 Recommended order:
 
-1. Initialize shadcn/ui from https://ui.shadcn.com/ and add the project config plus core components.
-2. Rebuild the current auth/capture surfaces with official shadcn/ui components instead of custom Tailwind-only markup.
-3. Implement Auth.js v5 with Google OAuth in [app/api/auth/[...nextauth]/route.ts](/Users/bartbak/Repo/moment/app/api/auth/%5B...nextauth%5D/route.ts).
-4. Implement organisation lookup/create in [app/api/orgs/route.ts](/Users/bartbak/Repo/moment/app/api/orgs/route.ts).
-5. Replace the temporary email fallback in the capture flow with the authenticated session user.
-6. Build Phase 3 wall MVP on top of the now-working auth and org model.
+1. Build the wall MVP in [app/(app)/[orgSlug]/wall/page.tsx](/Users/bartbak/Repo/moment/app/(app)/%5BorgSlug%5D/wall/page.tsx).
+2. Add `PhotoCard` and wall controls for search, team filter, and capture CTA.
+3. Introduce pan/zoom before moving to chunked virtualisation.
+4. Add org settings/admin routes.
 
-Reason: the current Phase 2 capture flow works, but it is using a temporary email field because real authentication and onboarding are not in place yet, and the UI layer has not been migrated to official shadcn/ui components.
+Reason: the app now has authentication, domain-gated onboarding, and R2-backed uploads, so the wall experience is the actual missing product surface.
 
 ## Stack
 
@@ -54,7 +47,7 @@ Reason: the current Phase 2 capture flow works, but it is using a temporary emai
 - motion.dev
 - Prisma ORM 7.6
 - PostgreSQL
-- Cloudinary
+- Cloudflare R2
 - Netlify
 
 ## Runtime
@@ -106,34 +99,37 @@ NEXTAUTH_SECRET=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 DATABASE_URL=
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
 ```
 
 Notes:
 
 - `DATABASE_URL` should point to local Postgres in development.
 - replace it with Neon later for production.
-- Cloudinary values are required for the current capture upload flow.
-- Google OAuth values are not used yet because auth is still a placeholder.
+- `R2_PUBLIC_URL` should be the public bucket URL or your custom image domain.
+- R2 values are required for the current capture upload flow.
+- Google OAuth values are required because auth is live.
 
 ## Current Route Status
 
 | Route | Status | Notes |
 |---|---|---|
 | `/` | working | Landing page |
-| `/login` | placeholder | UI exists, no OAuth yet |
-| `/onboarding` | placeholder | Copy only |
-| `/[orgSlug]/capture` | working | Real capture flow |
-| `/[orgSlug]/wall` | placeholder | No wall UI yet |
-| `/api/auth/[...nextauth]` | placeholder | Returns 501 |
-| `/api/orgs` | placeholder | Returns 501 |
+| `/login` | working | Real Google OAuth trigger |
+| `/onboarding` | working | Auto-join or create org |
+| `/[orgSlug]/capture` | working | Real capture flow with session-gated access |
+| `/[orgSlug]/wall` | working | Basic org wall page, not infinite canvas yet |
+| `/api/auth/[...nextauth]` | working | Auth.js handlers |
+| `/api/orgs` | working | Session-based org lookup/create |
 | `/api/photos` | working | List + create photos |
 
 ## Frontend Standard
 
-The intended frontend stack is:
+The frontend stack in this repo is:
 
 - Next.js App Router
 - shadcn/ui from `ui.shadcn.com`
@@ -144,7 +140,7 @@ That means:
 
 - use official shadcn/ui components for forms, alerts, badges, dialogs, avatars, skeletons, and other shared UI
 - add components to the repo via the shadcn CLI instead of hand-rolling every control with raw Tailwind classes
-- avoid describing the frontend as “just Tailwind” because that is not the intended architecture here
+- keep route transitions aligned with [agents.md](/Users/bartbak/Repo/moment/agents.md) so page content does not blink on first paint
 
 ## Data Model
 
@@ -169,4 +165,4 @@ npx prisma migrate dev
 
 ## Deployment
 
-Netlify is the intended deployment target. Before deploying, set the same environment variables there and swap `DATABASE_URL` from local Postgres to Neon.
+Netlify is the intended deployment target. Before deploying, set the same environment variables there, swap `DATABASE_URL` from local Postgres to Neon, and make sure your R2 bucket is public through either an `r2.dev` URL or a custom domain.

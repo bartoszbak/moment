@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureOrganisationAccess } from "@/lib/organisations";
-import { uploadImageDataUrl } from "@/lib/cloudinary";
+import { uploadImageDataUrl } from "@/lib/r2";
 
 const MAX_IMAGE_DATA_URL_LENGTH = 14_000_000;
 
