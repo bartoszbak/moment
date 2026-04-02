@@ -1,32 +1,41 @@
+import { redirect } from "next/navigation";
 import { CaptureFlow } from "@/components/capture/CaptureFlow";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireSessionUser } from "@/lib/auth";
+import { ensureOrganisationAccess } from "@/lib/organisations";
 
 type CapturePageProps = {
   params: Promise<{ orgSlug: string }>;
-  searchParams?: Promise<{ email?: string; name?: string }>;
 };
 
-export default async function CapturePage({ params, searchParams }: CapturePageProps) {
+export default async function CapturePage({ params }: CapturePageProps) {
   const { orgSlug } = await params;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const user = await requireSessionUser();
+  const access = await ensureOrganisationAccess(user, orgSlug);
+
+  if (!access?.organisation || !access.member) {
+    redirect("/onboarding");
+  }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_45%,#eef2ff_100%)] px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-sky-700">Faces capture</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-            Create the card that lands on <span className="text-sky-700">{orgSlug}</span>&apos;s wall.
-          </h1>
-          <p className="mt-4 text-base leading-7 text-slate-600">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,transparent_45%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.3)_100%)] px-6 py-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        <Card className="border-border/70 bg-card/95 shadow-lg">
+          <CardHeader className="gap-3">
+            <Badge variant="outline" className="w-fit">
+              Capture
+            </Badge>
+            <CardTitle className="text-4xl tracking-tight sm:text-5xl">
+              Create the card that lands on <span className="text-primary">{orgSlug}</span>&apos;s wall.
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="max-w-3xl text-base leading-7 text-muted-foreground">
             Snap your photo, review it, and add the details that will appear on the shared team canvas.
-          </p>
-        </div>
+          </CardContent>
+        </Card>
 
-        <CaptureFlow
-          orgSlug={orgSlug}
-          defaultEmail={resolvedSearchParams?.email}
-          defaultName={resolvedSearchParams?.name}
-        />
+        <CaptureFlow orgSlug={orgSlug} defaultName={access.member.name ?? user.name ?? ""} />
       </div>
     </main>
   );

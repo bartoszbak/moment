@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getEmailDomain } from "@/lib/org";
+import { ensureOrganisationAccess } from "@/lib/organisations";
 import { uploadImageDataUrl } from "@/lib/cloudinary";
 
 const MAX_IMAGE_DATA_URL_LENGTH = 14_000_000;
@@ -53,16 +54,25 @@ function validateRequiredString(value: unknown, fieldName: string, maxLength: nu
 
 export async function GET(request: NextRequest) {
   const orgSlug = request.nextUrl.searchParams.get("orgSlug");
+  const user = await getSessionUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
 
   if (!orgSlug) {
     return NextResponse.json({ error: "orgSlug is required." }, { status: 400 });
   }
 
+  const access = await ensureOrganisationAccess(user, orgSlug);
+
+  if (!access?.organisation || !access.member) {
+    return NextResponse.json({ error: "Organisation access denied." }, { status: 403 });
+  }
+
   const photos = await prisma.photo.findMany({
     where: {
-      org: {
-        slug: orgSlug
-      }
+      orgId: access.organisation.id
     },
     orderBy: {
       createdAt: "desc"
@@ -74,10 +84,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getSessionUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const orgSlug = validateRequiredString(body.orgSlug, "orgSlug", 120);
-    const email = validateRequiredString(body.email, "email", 320).toLowerCase();
     const memberName = validateRequiredString(body.memberName, "memberName", 80);
     const team = validateRequiredString(body.team, "team", 80);
     const imageDataUrl = validateRequiredString(body.imageDataUrl, "imageDataUrl", MAX_IMAGE_DATA_URL_LENGTH);
@@ -86,57 +101,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "imageDataUrl must be a valid image data URL." }, { status: 400 });
     }
 
-    const organisation = await prisma.organisation.findUnique({
-      where: {
-        slug: orgSlug
-      }
-    });
+    const access = await ensureOrganisationAccess(user, orgSlug);
 
-    if (!organisation) {
-      return NextResponse.json({ error: "Organisation not found." }, { status: 404 });
-    }
-
-    const emailDomain = getEmailDomain(email);
-
-    if (emailDomain !== organisation.domain) {
-      return NextResponse.json(
-        { error: `Email domain must match ${organisation.domain}.` },
-        { status: 403 }
-      );
-    }
-
-    const existingMember = await prisma.member.findUnique({
-      where: {
-        email
-      }
-    });
-
-    if (existingMember && existingMember.orgId !== organisation.id) {
-      return NextResponse.json(
-        { error: "This email address already belongs to another organisation." },
-        { status: 409 }
-      );
+    if (!access?.organisation || !access.member) {
+      return NextResponse.json({ error: "Organisation access denied." }, { status: 403 });
     }
 
     const uploadedUrl = await uploadImageDataUrl(imageDataUrl);
-
     const [member, photoCount] = await prisma.$transaction([
-      prisma.member.upsert({
+      prisma.member.update({
         where: {
-          email
+          email: user.email
         },
-        update: {
+        data: {
           name: memberName
-        },
-        create: {
-          email,
-          name: memberName,
-          orgId: organisation.id
         }
       }),
       prisma.photo.count({
         where: {
-          orgId: organisation.id
+          orgId: access.organisation.id
         }
       })
     ]);
@@ -147,7 +130,7 @@ export async function POST(request: NextRequest) {
       data: {
         memberId: member.id,
         memberName,
-        orgId: organisation.id,
+        orgId: access.organisation.id,
         team,
         url: uploadedUrl,
         x,

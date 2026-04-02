@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type CameraCaptureProps = {
   onCapture: (imageDataUrl: string) => void;
@@ -11,7 +16,6 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const reduceMotion = useReducedMotion();
 
   const [cameraState, setCameraState] = useState<"idle" | "starting" | "ready">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -102,67 +106,56 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   }
 
   return (
-    <motion.section
-      className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.5)] backdrop-blur"
-      initial={reduceMotion ? undefined : { opacity: 0, y: 16 }}
-      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-sky-700">Step 1</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Take your portrait</h2>
-        </div>
-        <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
-          Webcam
-        </span>
-      </div>
+    <div>
+      <Card className="shadow-lg">
+        <CardHeader className="gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <Badge variant="outline" className="w-fit">
+                Step 1
+              </Badge>
+              <CardTitle>Take your portrait</CardTitle>
+            </div>
+            <Badge>Webcam</Badge>
+          </div>
+        </CardHeader>
+        <Separator />
+        <CardContent className="flex flex-col gap-4 pt-4">
+          <div className="overflow-hidden rounded-xl border border-border/70 bg-muted">
+            {cameraState === "idle" ? (
+              <Skeleton className="aspect-[4/3] w-full rounded-none" />
+            ) : null}
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className={cameraState === "idle" ? "hidden" : "aspect-[4/3] w-full object-cover"}
+            />
+          </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-slate-950">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          playsInline
-          className="aspect-[4/3] w-full object-cover"
-        />
-      </div>
+          <canvas ref={canvasRef} className="hidden" />
 
-      <canvas ref={canvasRef} className="hidden" />
-
-      {error ? (
-        <div
-          role="alert"
-          className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-        >
-          {error}
-        </div>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap gap-3">
-        {cameraState === "ready" ? (
-          <button
-            type="button"
-            onClick={handleCapture}
-            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Snap photo
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={startCamera}
-            disabled={cameraState === "starting"}
-            className="rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-sky-300"
-          >
-            {cameraState === "starting" ? "Starting camera..." : "Enable camera"}
-          </button>
-        )}
-
-        <p className="self-center text-sm text-slate-500">
-          Use a front-facing camera with soft light for the best result.
-        </p>
-      </div>
-    </motion.section>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertTitle>Camera error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
+          {cameraState === "ready" ? (
+            <Button onClick={handleCapture}>Snap photo</Button>
+          ) : (
+            <Button onClick={startCamera} disabled={cameraState === "starting"}>
+              {cameraState === "starting" ? "Starting camera..." : "Enable camera"}
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Use a front-facing camera with soft light for the best result.
+          </span>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

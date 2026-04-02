@@ -2,7 +2,29 @@
 
 import { FormEvent, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldLegend
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const TEAM_SUGGESTIONS = [
   "Engineering",
@@ -18,16 +40,13 @@ const TEAM_SUGGESTIONS = [
 type PhotoFormProps = {
   imageDataUrl: string;
   orgSlug: string;
-  defaultEmail?: string;
   defaultName?: string;
 };
 
-export function PhotoForm({ imageDataUrl, orgSlug, defaultEmail = "", defaultName = "" }: PhotoFormProps) {
+export function PhotoForm({ imageDataUrl, orgSlug, defaultName = "" }: PhotoFormProps) {
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
   const datalistId = useId();
 
-  const [email, setEmail] = useState(defaultEmail);
   const [memberName, setMemberName] = useState(defaultName);
   const [team, setTeam] = useState(TEAM_SUGGESTIONS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +74,6 @@ export function PhotoForm({ imageDataUrl, orgSlug, defaultEmail = "", defaultNam
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email,
           imageDataUrl,
           memberName,
           orgSlug,
@@ -79,100 +97,110 @@ export function PhotoForm({ imageDataUrl, orgSlug, defaultEmail = "", defaultNam
   }
 
   return (
-    <motion.section
-      className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.5)] backdrop-blur"
-      initial={reduceMotion ? undefined : { opacity: 0, y: 20 }}
-      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-    >
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-fuchsia-700">Step 3</p>
-        <h2 className="mt-2 text-2xl font-semibold text-slate-950">Add your details</h2>
-        <p className="mt-2 max-w-xl text-sm text-slate-600">
-          Until OAuth is wired, the capture flow uses your work email here to validate organisation access.
-        </p>
-      </div>
+    <div>
+      <Card className="shadow-lg">
+        <CardHeader className="gap-3">
+          <Badge variant="outline" className="w-fit">
+            Step 3
+          </Badge>
+          <CardTitle>Add your details</CardTitle>
+          <CardDescription className="max-w-xl">
+            Your Google session already identifies you. Add the display name and team label that should appear on the wall card.
+          </CardDescription>
+        </CardHeader>
+        <Separator />
+        <form onSubmit={handleSubmit}>
+          <CardContent className="pt-4">
+            <FieldSet>
+              <FieldLegend variant="label">Member details</FieldLegend>
+              <FieldDescription>
+                These values are saved with the photo card that will appear on the wall.
+              </FieldDescription>
 
-      <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">Work email</span>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500"
-            placeholder="you@company.com"
-          />
-        </label>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="memberName">Display name</FieldLabel>
+                  <Input
+                    id="memberName"
+                    type="text"
+                    required
+                    maxLength={80}
+                    autoComplete="name"
+                    value={memberName}
+                    onChange={(event) => setMemberName(event.target.value)}
+                    placeholder="Bartosz Bak"
+                  />
+                </Field>
 
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">Display name</span>
-          <input
-            type="text"
-            required
-            maxLength={80}
-            autoComplete="name"
-            value={memberName}
-            onChange={(event) => setMemberName(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500"
-            placeholder="Bartosz Bak"
-          />
-        </label>
+                <Field>
+                  <FieldLabel htmlFor="team">Team</FieldLabel>
+                  <Input
+                    id="team"
+                    type="text"
+                    required
+                    maxLength={80}
+                    list={datalistId}
+                    value={team}
+                    onChange={(event) => setTeam(event.target.value)}
+                    placeholder="Engineering"
+                  />
+                  <datalist id={datalistId}>
+                    {TEAM_SUGGESTIONS.map((item) => (
+                      <option key={item} value={item} />
+                    ))}
+                  </datalist>
+                  <FieldDescription>
+                    Pick a common team, or type your own if it is not listed.
+                  </FieldDescription>
+                </Field>
 
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">Team</span>
-          <input
-            type="text"
-            required
-            maxLength={80}
-            list={datalistId}
-            value={team}
-            onChange={(event) => setTeam(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500"
-            placeholder="Engineering"
-          />
-          <datalist id={datalistId}>
-            {TEAM_SUGGESTIONS.map((item) => (
-              <option key={item} value={item} />
-            ))}
-          </datalist>
-        </label>
+                <Field>
+                  <FieldLabel>Quick team pick</FieldLabel>
+                  <ToggleGroup
+                    multiple={false}
+                    variant="outline"
+                    value={team ? [team] : []}
+                    onValueChange={(value) => {
+                      const nextValue = value[0];
 
-        <div className="flex flex-wrap gap-2">
-          {suggestedTeams.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setTeam(item)}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+                      if (nextValue) {
+                        setTeam(nextValue);
+                      }
+                    }}
+                    className="flex w-full flex-wrap gap-2"
+                    spacing={2}
+                  >
+                    {suggestedTeams.map((item) => (
+                      <ToggleGroupItem key={item} value={item}>
+                        {item}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </Field>
 
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-          >
-            {error}
-          </div>
-        ) : null}
+                <Field>
+                  <FieldError>{error}</FieldError>
+                </Field>
+              </FieldGroup>
+            </FieldSet>
 
-        <div className="flex items-center gap-4 pt-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isSubmitting ? "Posting photo..." : "Post to wall"}
-          </button>
-          <p className="text-sm text-slate-500">Your photo will be uploaded and placed on the shared canvas.</p>
-        </div>
-      </form>
-    </motion.section>
+            {error ? (
+              <Alert variant="destructive" className="mt-5">
+                <AlertTitle>Upload failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+          </CardContent>
+          <CardFooter className="justify-between gap-4">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Posting photo..." : "Post to wall"}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Your photo will be uploaded and placed on the shared canvas.
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }

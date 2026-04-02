@@ -1,9 +1,3 @@
-import { NextResponse } from "next/server";
+import { handlers } from "@/lib/auth";
 
-export async function GET() {
-  return NextResponse.json({ message: "Auth.js route placeholder" }, { status: 501 });
-}
-
-export async function POST() {
-  return NextResponse.json({ message: "Auth.js route placeholder" }, { status: 501 });
-}
+export const { GET, POST } = handlers;
