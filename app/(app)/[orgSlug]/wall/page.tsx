@@ -1,16 +1,18 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
+import { PageReveal } from "@/components/layout/page-reveal";
+import { WallCanvas } from "@/components/wall/wall-canvas";
+import { type WallPhoto } from "@/components/wall/photo-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { PageReveal } from "@/components/layout/page-reveal";
 import { requireSessionUser } from "@/lib/auth";
 import { ensureOrganisationAccess } from "@/lib/organisations";
 import { prisma } from "@/lib/prisma";
@@ -38,8 +40,20 @@ export default async function WallPage({ params }: WallPageProps) {
     orderBy: {
       createdAt: "desc"
     },
-    take: 12
+    take: 200
   });
+
+  const wallPhotos: WallPhoto[] = photos.map((photo) => ({
+    id: photo.id,
+    url: photo.url,
+    memberName: photo.memberName,
+    team: photo.team,
+    x: photo.x,
+    y: photo.y,
+    createdAt: photo.createdAt.toISOString(),
+    memberEmail: photo.member.email
+  }));
+  const captureHref = `/${orgSlug}/capture` as Route;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--muted))_0%,transparent_42%),hsl(var(--background))] px-6 py-10">
@@ -54,14 +68,14 @@ export default async function WallPage({ params }: WallPageProps) {
                 {access.organisation.name}
               </CardTitle>
               <CardDescription>
-                Signed in as <span className="font-medium text-foreground">{user.email}</span>. The infinite canvas is still the next phase, but the org-gated wall route is now live.
+                Signed in as <span className="font-medium text-foreground">{user.email}</span>. This is the wall MVP: search, team filtering, drag-to-pan, and simple zoom on top of the real org-scoped photo data.
               </CardDescription>
             </CardHeader>
             <CardFooter className="justify-between gap-4">
               <p className="text-sm text-muted-foreground">
-                {photos.length} photo{photos.length === 1 ? "" : "s"} currently on the wall.
+                {photos.length} portrait{photos.length === 1 ? "" : "s"} currently on the wall.
               </p>
-              <Button nativeButton={false} render={<Link href={`/${orgSlug}/capture`} />}>
+              <Button nativeButton={false} render={<Link href={captureHref} />}>
                 Add your photo
               </Button>
             </CardFooter>
@@ -69,44 +83,7 @@ export default async function WallPage({ params }: WallPageProps) {
         </PageReveal>
 
         <PageReveal delay={0.16}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {photos.length > 0 ? (
-              photos.map((photo) => (
-                <Card key={photo.id} className="overflow-hidden shadow-lg">
-                  <div className="aspect-[4/3] bg-muted">
-                    <img
-                      src={photo.url}
-                      alt={`${photo.memberName}'s portrait`}
-                      className="size-full object-cover"
-                    />
-                  </div>
-                  <CardContent className="flex flex-col gap-2 pt-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{photo.memberName}</p>
-                      <Badge variant="secondary">{photo.team}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {photo.member.email}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
-                <CardContent className="flex flex-col gap-4 py-10">
-                  <p className="text-lg font-medium">No portraits yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    Start the wall by capturing the first team photo for this organisation.
-                  </p>
-                  <div>
-                    <Button nativeButton={false} render={<Link href={`/${orgSlug}/capture`} />}>
-                      Open capture flow
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <WallCanvas photos={wallPhotos} captureHref={captureHref} />
         </PageReveal>
       </div>
     </main>
