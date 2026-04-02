@@ -16,7 +16,7 @@ Faces lets distributed teams see each other — literally. Every employee signs 
 |---|---|
 | Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
-| UI | shadcn/ui + Tailwind CSS |
+| UI | shadcn/ui + Tailwind CSS + motion.dev (Motion for React) |
 | Auth | Auth.js v5 — Google OAuth provider |
 | Database | Neon (serverless Postgres) |
 | ORM | Prisma |
@@ -233,6 +233,29 @@ Camera permission errors are handled gracefully with a shadcn `Alert` component.
 - `Skeleton` — loading states for wall chunks
 - `Command` — team search/select in the capture form
 - `HoverCard` — quick profile peek on hover
+
+---
+
+
+
+### UI Motion Standard (motion.dev)
+
+Use **motion.dev** (`motion` package) for interactive UI animation across the app.
+
+- Prefer `motion/react` primitives for component enter/exit, hover, and tap interactions
+- Use subtle defaults (e.g. 150–250ms ease-out) to keep the wall feeling fast
+- Respect reduced-motion preferences via `useReducedMotion` and avoid essential UX depending on animation
+- Suggested use cases in this project:
+  - Fade/slide transitions for onboarding and dialogs
+  - Gentle scale/hover feedback on photo cards
+  - Smooth presence transitions when cards enter viewport chunks
+  - Lightweight micro-interactions on controls (zoom/search/filter)
+
+Example import:
+
+```tsx
+import { motion } from "motion/react";
+```
 
 ---
 
