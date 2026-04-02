@@ -4,7 +4,11 @@ An async team photo wall for remote organisations. Sign in with your work Google
 
 ## Stack
 
-Next.js 15 · TypeScript · shadcn/ui · Auth.js (Google OAuth) · Prisma · Neon Postgres · Cloudinary · Netlify
+Next.js 15 · TypeScript · shadcn/ui · Auth.js (Google OAuth) · Prisma ORM 7 · PostgreSQL · Cloudinary · Netlify
+
+## Runtime
+
+Node.js 24 is required. The repo is pinned via [.node-version](/Users/bartbak/Repo/moment/.node-version).
 
 ## Getting Started
 
@@ -13,6 +17,36 @@ npm install
 npx prisma migrate dev
 npm run dev
 ```
+
+## Local Database
+
+The repo is set up to use a native local PostgreSQL database in development.
+
+```bash
+createdb moment
+```
+
+On this machine, PostgreSQL tools are available through Postgres.app, and the default local connection string is already set in [.env.local](/Users/bartbak/Repo/moment/.env.local):
+
+```bash
+DATABASE_URL=postgresql://bartbak@localhost:5432/moment?schema=public
+```
+
+If you ever need to recreate the database:
+
+```bash
+dropdb moment
+createdb moment
+```
+
+Useful commands:
+
+```bash
+npx prisma studio
+psql moment
+```
+
+Prisma CLI loads `DATABASE_URL` from [.env](/Users/bartbak/Repo/moment/.env). Next.js uses [.env.local](/Users/bartbak/Repo/moment/.env.local), so keep the local database URL in both files.
 
 ## Environment Variables
 
@@ -26,6 +60,8 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 ```
+
+For local development, `DATABASE_URL` should point to your native local Postgres instance. For production, replace it with your Neon connection string.
 
 ## How It Works
 
