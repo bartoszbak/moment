@@ -21,22 +21,23 @@ This repo is partially implemented.
   - stable photo placement coordinates in the database
 
 - Still placeholder:
-  - wall rendering beyond a placeholder page
   - settings/admin surface
-  - full infinite canvas implementation
+  - admin export/download actions for the wall
+  - full photo dialog/detail interactions
 
 ## What To Do Next
 
-Based on [BuildMe.md](/Users/bartbak/Repo/moment/BuildMe.md), the next sensible step is Phase 3 wall MVP work now that auth, onboarding, and uploads are in place.
+Based on [BuildMe.md](/Users/bartbak/Repo/moment/BuildMe.md), the next sensible step is Phase 5 polish and admin actions on top of the current wall/canvas implementation.
 
 Recommended order:
 
-1. Build the wall MVP in [app/(app)/[orgSlug]/wall/page.tsx](/Users/bartbak/Repo/moment/app/(app)/%5BorgSlug%5D/wall/page.tsx).
-2. Add `PhotoCard` and wall controls for search, team filter, and capture CTA.
-3. Introduce pan/zoom before moving to chunked virtualisation.
+1. Add admin-only wall export actions.
+2. Start with `Export viewport as PNG` for `OWNER` / `ADMIN`.
+3. Add expanded photo dialog/detail interactions.
 4. Add org settings/admin routes.
+5. Refine mobile wall and capture UX.
 
-Reason: the app now has authentication, domain-gated onboarding, and R2-backed uploads, so the wall experience is the actual missing product surface.
+Reason: the app now has auth, onboarding, uploads, and chunked canvas rendering. The highest-value missing pieces are admin workflows and polish.
 
 ## Stack
 
@@ -122,7 +123,7 @@ Notes:
 | `/login` | working | Real Google OAuth trigger |
 | `/onboarding` | working | Auto-join or create org |
 | `/[orgSlug]/capture` | working | Real capture flow with session-gated access |
-| `/[orgSlug]/wall` | working | Basic org wall page, not infinite canvas yet |
+| `/[orgSlug]/wall` | working | Chunked infinite canvas with search/filter/pan/zoom |
 | `/api/auth/[...nextauth]` | working | Auth.js handlers |
 | `/api/orgs` | working | Session-based org lookup/create |
 | `/api/photos` | working | List + create photos |

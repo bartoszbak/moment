@@ -346,6 +346,8 @@ R2_PUBLIC_URL=
 - Name search
 - Team filter
 - Click-to-expand photo dialog
+- Admin-only export viewport as PNG
+- Admin-only full wall export as a later/heavier follow-up
 - Settings page for org admins (rename org, view member list)
 - Mobile-responsive capture flow
 
