@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { PageReveal } from "@/components/layout/page-reveal";
-import { WallCanvas } from "@/components/wall/wall-canvas";
-import { type WallPhoto } from "@/components/wall/photo-card";
+import { InfiniteCanvas } from "@/components/wall/infinite-canvas";
+import { type WallPhoto } from "@/components/wall/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 import { requireSessionUser } from "@/lib/auth";
 import { ensureOrganisationAccess } from "@/lib/organisations";
 import { prisma } from "@/lib/prisma";
+import { getChunkBounds } from "@/lib/wall";
 
 type WallPageProps = {
   params: Promise<{ orgSlug: string }>;
@@ -30,18 +31,46 @@ export default async function WallPage({ params }: WallPageProps) {
     redirect("/onboarding");
   }
 
-  const photos = await prisma.photo.findMany({
-    where: {
-      orgId: access.organisation.id
-    },
-    include: {
-      member: true
-    },
-    orderBy: {
-      createdAt: "desc"
-    },
-    take: 200
-  });
+  const initialBounds = getChunkBounds(0, 0);
+  const [photos, teamRows, totalCount] = await prisma.$transaction([
+    prisma.photo.findMany({
+      where: {
+        orgId: access.organisation.id,
+        x: {
+          gte: initialBounds.minX,
+          lt: initialBounds.maxX
+        },
+        y: {
+          gte: initialBounds.minY,
+          lt: initialBounds.maxY
+        }
+      },
+      include: {
+        member: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: 200
+    }),
+    prisma.photo.findMany({
+      where: {
+        orgId: access.organisation.id
+      },
+      distinct: ["team"],
+      orderBy: {
+        team: "asc"
+      },
+      select: {
+        team: true
+      }
+    }),
+    prisma.photo.count({
+      where: {
+        orgId: access.organisation.id
+      }
+    })
+  ]);
 
   const wallPhotos: WallPhoto[] = photos.map((photo) => ({
     id: photo.id,
@@ -68,12 +97,12 @@ export default async function WallPage({ params }: WallPageProps) {
                 {access.organisation.name}
               </CardTitle>
               <CardDescription>
-                Signed in as <span className="font-medium text-foreground">{user.email}</span>. This is the wall MVP: search, team filtering, drag-to-pan, and simple zoom on top of the real org-scoped photo data.
+                Signed in as <span className="font-medium text-foreground">{user.email}</span>. This wall now loads by viewport chunk, with on-demand fetching as you pan and zoom through the organisation canvas.
               </CardDescription>
             </CardHeader>
             <CardFooter className="justify-between gap-4">
               <p className="text-sm text-muted-foreground">
-                {photos.length} portrait{photos.length === 1 ? "" : "s"} currently on the wall.
+                {totalCount} portrait{totalCount === 1 ? "" : "s"} currently on the wall.
               </p>
               <Button nativeButton={false} render={<Link href={captureHref} />}>
                 Add your photo
@@ -83,7 +112,13 @@ export default async function WallPage({ params }: WallPageProps) {
         </PageReveal>
 
         <PageReveal delay={0.16}>
-          <WallCanvas photos={wallPhotos} captureHref={captureHref} />
+          <InfiniteCanvas
+            captureHref={captureHref}
+            initialPhotos={wallPhotos}
+            orgSlug={orgSlug}
+            teams={teamRows.map((row) => row.team)}
+            totalCount={totalCount}
+          />
         </PageReveal>
       </div>
     </main>

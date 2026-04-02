@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureOrganisationAccess } from "@/lib/organisations";
 import { uploadImageDataUrl } from "@/lib/r2";
+import { getChunkBounds, WALL_CHUNK_SIZE } from "@/lib/wall";
 
 const MAX_IMAGE_DATA_URL_LENGTH = 14_000_000;
 
@@ -52,8 +53,23 @@ function validateRequiredString(value: unknown, fieldName: string, maxLength: nu
   return trimmed;
 }
 
+function parseOptionalInteger(value: string | null) {
+  if (value === null) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
 export async function GET(request: NextRequest) {
   const orgSlug = request.nextUrl.searchParams.get("orgSlug");
+  const chunkX = parseOptionalInteger(request.nextUrl.searchParams.get("chunkX"));
+  const chunkY = parseOptionalInteger(request.nextUrl.searchParams.get("chunkY"));
+  const chunkSize = parseOptionalInteger(request.nextUrl.searchParams.get("chunkSize")) ?? WALL_CHUNK_SIZE;
+  const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
+  const team = request.nextUrl.searchParams.get("team")?.trim() ?? "";
   const user = await getSessionUser();
 
   if (!user) {
@@ -70,17 +86,59 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Organisation access denied." }, { status: 403 });
   }
 
+  const bounds =
+    chunkX !== null && chunkY !== null ? getChunkBounds(chunkX, chunkY, chunkSize) : null;
+
   const photos = await prisma.photo.findMany({
     where: {
-      orgId: access.organisation.id
+      orgId: access.organisation.id,
+      ...(bounds
+        ? {
+            x: {
+              gte: bounds.minX,
+              lt: bounds.maxX
+            },
+            y: {
+              gte: bounds.minY,
+              lt: bounds.maxY
+            }
+          }
+        : {}),
+      ...(search
+        ? {
+            memberName: {
+              contains: search,
+              mode: "insensitive"
+            }
+          }
+        : {}),
+      ...(team
+        ? {
+            team
+          }
+        : {})
     },
     orderBy: {
       createdAt: "desc"
     },
-    take: 100
+    include: {
+      member: true
+    },
+    take: bounds ? 200 : 100
   });
 
-  return NextResponse.json({ photos });
+  return NextResponse.json({
+    photos: photos.map((photo) => ({
+      id: photo.id,
+      url: photo.url,
+      memberName: photo.memberName,
+      team: photo.team,
+      x: photo.x,
+      y: photo.y,
+      createdAt: photo.createdAt.toISOString(),
+      memberEmail: photo.member.email
+    }))
+  });
 }
 
 export async function POST(request: NextRequest) {

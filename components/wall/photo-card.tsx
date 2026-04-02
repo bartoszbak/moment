@@ -3,17 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-export type WallPhoto = {
-  id: string;
-  url: string;
-  memberName: string;
-  team: string;
-  x: number;
-  y: number;
-  createdAt: string;
-  memberEmail: string;
-};
+import { type WallPhoto } from "@/components/wall/types";
 
 type PhotoCardProps = {
   photo: WallPhoto;
