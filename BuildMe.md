@@ -16,7 +16,7 @@ Faces lets distributed teams see each other — literally. Every employee signs 
 |---|---|
 | Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
-| UI | shadcn/ui + Tailwind CSS + motion.dev (Motion for React) |
+| UI | official shadcn/ui from https://ui.shadcn.com/ + Tailwind CSS + motion.dev (Motion for React) |
 | Auth | Auth.js v5 — Google OAuth provider |
 | Database | Neon (serverless Postgres) |
 | ORM | Prisma |
@@ -64,7 +64,7 @@ faces/
 │   │   ├── CameraCapture.tsx         # Webcam via MediaDevices API
 │   │   ├── PhotoPreview.tsx          # Review before posting
 │   │   └── PhotoForm.tsx             # Name + team fields
-│   └── ui/                           # shadcn/ui components
+│   └── ui/                           # shadcn/ui components generated from ui.shadcn.com
 │
 ├── lib/
 │   ├── auth.ts                       # Auth.js config + Google provider
@@ -224,6 +224,8 @@ Camera permission errors are handled gracefully with a shadcn `Alert` component.
 
 ## Key shadcn/ui Components
 
+These should come from the official shadcn/ui registry and documentation at https://ui.shadcn.com/, added to the project as source components via the shadcn CLI.
+
 - `Button`, `Input`, `Label`, `Form` — auth and capture forms
 - `Avatar` — photo cards
 - `Badge` — team labels
@@ -313,7 +315,7 @@ CLOUDINARY_API_SECRET=
 ## Build Phases
 
 ### Phase 1 — Foundation
-- Next.js + TypeScript + shadcn/ui + Tailwind scaffold
+- Next.js + TypeScript + official shadcn/ui + Tailwind scaffold
 - Prisma schema + Neon connection
 - Auth.js with Google provider
 - Domain extraction + org matching logic
